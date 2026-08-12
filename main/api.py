@@ -4,10 +4,13 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from fastapi.middleware.cors import CORSMiddleware
+import resend
 
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
+resend.api_key = os.environ["RESEND_API_KEY"]
+
 client = MongoClient(MONGODB_URI)
 
 try:
@@ -32,7 +35,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class Contact(BaseModel):
     name: str
     email: str
@@ -47,5 +49,18 @@ def index():
 @app.post("/contact")
 def contact(message: Contact):
     contacts_collection.insert_one(message.model_dump())
+
+    resend.Emails.send({
+        "from": "Favour Francis <onboarding@resend.dev>",
+        "to": ["favourfrancis.h@gmail.com"],
+        "subject": f"New portfolio message from {message.name}",
+        "html": f"""
+            <h2>New Contact Message</h2>
+            <p><strong>Name:</strong> {message.name}</p>
+            <p><strong>Email:</strong> {message.email}</p>
+            <p><strong>Message:</strong></p>
+            <p>{message.message}</p>
+        """,
+    })
 
     return {"Message Sent": message}
