@@ -26,14 +26,12 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "https://favourfrancis.vercel.app"
-    ],
+    allow_origins=["http://localhost:5173", "https://favourfrancis.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 class Contact(BaseModel):
     name: str
@@ -48,19 +46,19 @@ def index():
 
 @app.post("/contact")
 def contact(message: Contact):
+    resend.Emails.send(
+        {
+            "from": "Favour Francis <onboarding@resend.dev>",
+            "to": ["favourfrancis.h@gmail.com"],
+            "subject": f"New Message from {message.name}",
+            "html": f"""
+                <h2>New Contact Message</h2>
+                <p><strong>Email:</strong> {message.email}</p>
+                <p><strong>Message:</strong></p>
+                <p>{message.message}</p>
+            """,
+        }
+    )
     contacts_collection.insert_one(message.model_dump())
-
-    resend.Emails.send({
-        "from": "Favour Francis <onboarding@resend.dev>",
-        "to": ["favourfrancis.h@gmail.com"],
-        "subject": f"New portfolio message from {message.name}",
-        "html": f"""
-            <h2>New Contact Message</h2>
-            <p><strong>Name:</strong> {message.name}</p>
-            <p><strong>Email:</strong> {message.email}</p>
-            <p><strong>Message:</strong></p>
-            <p>{message.message}</p>
-        """,
-    })
 
     return {"Message Sent": message}
